@@ -17,6 +17,8 @@ more orders (if there is a tie use the one with the most recent order)
 - % of delivered orders 
 - Time when the last order was placed 
 - Time (in days) that passed from the second last order to the last one
+
+  The result is in user_orders.csv
   
 Partners analysis
 1. How many active partners do we have in our dataset?
@@ -30,4 +32,7 @@ known distribution? Is there anything odd in the distribution? )
 a correlation between the two? 
 8. What are the differences in the metrics for food vs Q-commerce? 
 9. Among all the possible combinations of dimensions (segments), which
-one has the highest number of partners? 
+one has the highest number of partners?
+
+The summary you can find 
+https://public.tableau.com/app/profile/irina8030/viz/OrderAnalysis_17097361279840/Story1?publish=yes
