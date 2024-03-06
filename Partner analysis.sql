@@ -46,20 +46,6 @@ SELECT
 	ROUND((COUNT(DISTINCT partner_id)/ AVG(total_partner_count) * 100),0) AS percentage_of_partners
 FROM cumulative_sum, total_orders, total_partners 
 GROUP BY group80_20;
-)
-total_partners AS (
-    SELECT COUNT(DISTINCT partner_id) AS total_partner_count
-    FROM data_orders
-),
-threshold AS (
-    SELECT
-        COUNT(*) AS threshold_partner_count
-    FROM (
-        SELECT partner_id
-        FROM cumulative_sum, total_orders
-        WHERE running_total <= (total_orders.total * 0.8)
-    ) AS needed_partners
-)
 
 --What is the average delivery time in Portugal (PT)? 35 min
 WITH partners_portugal AS(
@@ -138,9 +124,7 @@ ORDER BY avg_cost_part ASC;
 
 SELECT ROUND(corr (connected_hours,orders_daily)::numeric,3)
 FROM data_orders;
-DELETE 
-FROM data_business_segments
-WHERE business_segment IS NULL;
+
 
 --What are the differences in the metrics for food vs Q-commerce?
 SELECT bs.business_segment,
@@ -157,15 +141,34 @@ GROUP BY bs.business_segment, dv.vertical;
 
 --Among all the possible combinations of dimensions (segments), which
 --one has the highest number of partners? 
-SELECT dv.vertical,
-		bs.business_segment,
-		dc.country,
-		COUNT(DISTINCT bs.partner_id) as number_of_partners
-FROM data_business_segments as bs
-JOIN data_vertical as dv on bs.partner_id=dv.partner_id
-JOIN data_countries as dc on bs.partner_id=dc.partner_id
-GROUP BY bs.business_segment, dv.vertical,dc.country
-ORDER BY dv.vertical,
-		bs.business_segment,
-		dc.country, COUNT(DISTINCT bs.partner_id);
-		
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+
+SELECT * FROM CROSSTAB(
+  $$
+  WITH f AS (
+    SELECT 
+      dv.vertical AS vertical,
+      bs.business_segment AS business_segment,
+      dc.country AS country,
+      COUNT(DISTINCT bs.partner_id) AS number_of_partners
+    FROM data_business_segments AS bs
+    JOIN data_vertical AS dv ON bs.partner_id = dv.partner_id
+    JOIN data_countries AS dc ON bs.partner_id = dc.partner_id
+    GROUP BY bs.business_segment, dv.vertical, dc.country
+    ORDER BY dv.vertical, bs.business_segment, dc.country
+  )
+  SELECT 
+    vertical || ' - ' || business_segment AS business_segment, 
+    country, 
+    number_of_partners
+  FROM f
+  ORDER BY 1, 2
+  $$,
+  $$ SELECT unnest(ARRAY['ES', 'IT', 'PT', 'UA']) $$  -- This part needs to be adjusted if your countries change
+) AS final_result (
+  business_segment TEXT,
+  "ES" INT,
+  "IT" INT,
+  "PT" INT,
+  "UA" INT
+);
